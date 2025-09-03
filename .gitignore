@@ -1,0 +1,49 @@
+# --- Vagrant & VMware ---
+.vagrant/
+*.box
+
+# --- Node (app) ---
+node_modules/
+npm-debug.log*
+yarn-error.log*
+.pnpm-store/
+dist/
+.tmp/
+.cache/
+
+# (mantenha lockfiles versionados!)
+# !package-lock.json
+# !yarn.lock
+# !pnpm-lock.yaml
+
+# --- Python (frontend FastAPI) ---
+.venv/
+venv/
+ENV/
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.pytest_cache/
+.coverage*
+build/
+dist/
+*.egg-info/
+
+# --- Banco / dumps ---
+# Ignore dumps grandes por padrão, mas mantenha SQLs da pasta database/
+*.sql
+!database/**/*.sql
+
+# --- Env & segredos ---
+.env
+.env.*
+!.env.example
+
+# --- SO / IDE ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/tasks.json
