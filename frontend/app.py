@@ -3,7 +3,8 @@ import requests
 import streamlit as st
 from datetime import datetime
 
-API_URL = os.getenv("API_URL", "http://172.16.21.165:8001")
+
+API_URL = os.getenv("API_URL", "http://192.168.90.20:8001").rstrip("/")
 
 st.set_page_config(page_title="Tuesday", layout="wide")
 st.title("Tuesday.com")
