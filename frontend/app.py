@@ -100,28 +100,6 @@ def page_home():
     topbar(show_nav=False)
 
     st.markdown("## Bem-vindo ao **Tuesday.com**")
-    st.caption(f"Endpoint da API: **{API_URL}** (edite /srv/frontend/.env para alterar)")
-
-    st.subheader("Status dos serviços")
-    col_a, col_b = st.columns(2)
-    try:
-        resp = requests.get(f"{API_URL}/health", timeout=3)
-        try:
-            h = resp.json()
-        except Exception:
-            h = json.loads(resp.text or "{}")
-        with col_a:
-            status = str(h.get("status", "")).lower()
-            if status == "ok":
-                st.success("API: OK")
-            elif status:
-                st.warning(f"API: {status}")
-            else:
-                st.info("API respondeu, mas sem status.")
-        with col_b:
-            st.info(f"Database conectado: **{h.get('db_host', 'desconhecido')}**")
-    except Exception as e:
-        st.error(f"API offline? {e}")
 
     st.markdown("---")
     st.write("Faça login ou crie sua conta para gerenciar suas tarefas.")

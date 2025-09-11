@@ -12,9 +12,9 @@ Vagrant.configure("2") do |config|
     fe.vm.network "private_network",
       ip: "192.168.90.10", netmask: "255.255.255.0", vmware__netname: "vmnet3"
 
-    # Port-forward para acessar do host: http://127.0.0.1:18000
+    # Port-forward para acessar de qualquer computador na mesma rede com meu ip
     fe.vm.network "forwarded_port",
-      guest: 8501, host: 18000, host_ip: "127.0.0.1", auto_correct: true
+      guest: 8501, host: 18000, host_ip: "0.0.0.0", auto_correct: true
 
     # Pasta sincronizada
     fe.vm.synced_folder "./frontend", "/srv/frontend",
