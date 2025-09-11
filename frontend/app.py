@@ -18,10 +18,8 @@ load_env()
 
 API_URL = os.getenv("API_URL", "http://192.168.90.20:8001").rstrip("/")
 
-# --------- Config da página ----------
 st.set_page_config(page_title="Tuesday.com", layout="wide")
 
-# --------- Estado e utilidades ----------
 if "route" not in st.session_state:
     st.session_state.route = "home"
 if "token" not in st.session_state:
@@ -64,9 +62,7 @@ def do_logout():
     st.session_state.show_account_menu = False
     goto("home")
 
-# --------- Topbar ----------
 def topbar(show_nav: bool):
-    # Esquerda: logo/nome. Direita: navegação (opcional) e conta
     c1, csp, c2 = st.columns([6, 3, 3])
     with c1:
         st.markdown("### **Tuesday.com**")
@@ -74,7 +70,6 @@ def topbar(show_nav: bool):
     with c2:
         if show_nav:
             nav_cols = st.columns([1, 1, 2])
-            # Navegação básica (não aparece na Home)
             with nav_cols[0]:
                 if st.button("Início", key="btn_home_top"):
                     goto("home")
@@ -82,7 +77,6 @@ def topbar(show_nav: bool):
                 if (not st.session_state.token) and st.button("Login / Registro", key="btn_auth_top"):
                     goto("auth")
 
-            # Botão da conta (apenas quando logado)
             with nav_cols[2]:
                 if st.session_state.token:
                     label = f"👤 {st.session_state.user_email or 'Conta'} ▾"
@@ -94,9 +88,7 @@ def topbar(show_nav: bool):
                         if st.button("Sair da conta", key="btn_logout"):
                             do_logout()
 
-# --------- Páginas ----------
 def page_home():
-    # Na Home NÃO mostramos os botões de topo
     topbar(show_nav=False)
 
     st.markdown("## Bem-vindo ao **Tuesday.com**")
@@ -230,14 +222,13 @@ def page_tasks():
                     r = api("POST", "/api/tasks", json=payload)
                     if r.status_code in (200, 201):
                         st.success("Tarefa criada!")
-                        st.session_state.tasks_cache = []  # força recarregar
+                        st.session_state.tasks_cache = []
                         safe_rerun()
                     else:
                         st.error(f"Erro: {r.status_code} {r.text}")
                 except Exception as e:
                     st.error(f"Falha: {e}")
 
-    # Carregar e exibir tabela
     if not st.session_state.tasks_cache:
         r = api("GET", "/api/tasks")
         if r.ok:
@@ -271,7 +262,6 @@ def page_tasks():
         st.session_state.tasks_cache = []
         safe_rerun()
 
-# --------- Router ----------
 route = st.session_state.route
 if route == "home":
     page_home()

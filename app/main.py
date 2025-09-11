@@ -13,8 +13,6 @@ from sqlalchemy import (
 from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
 from sqlalchemy.exc import OperationalError, IntegrityError, ProgrammingError
 
-# ---------------- Password hashing ----------------
-# usa pbkdf2_sha256 (puro Python) por padrão; se bcrypt estiver presente, também é aceito
 from passlib.context import CryptContext
 PWD_CTX = CryptContext(schemes=["pbkdf2_sha256", "bcrypt"], deprecated="auto")
 
@@ -24,15 +22,14 @@ DB_PASS = os.getenv("DB_PASS", "app_pass")
 DB_NAME = os.getenv("DB_NAME", "app_db")
 DB_PORT = int(os.getenv("DB_PORT", "3306"))
 
-# Pode definir DB_HOSTS="database,192.168.90.30" (ordem de tentativa)
 DB_HOSTS = [h.strip() for h in os.getenv("DB_HOSTS", os.getenv("DB_HOST", "database")).split(",") if h.strip()]
 
 def make_db_url(host: str) -> str:
     return (f"mysql+pymysql://{DB_USER}:{DB_PASS}@{host}:{DB_PORT}/{DB_NAME}"
             f"?charset=utf8mb4&connect_timeout=5")
 
-_engine = None        # engine atual
-_engine_host = None   # host atual (para debug/health)
+_engine = None
+_engine_host = None
 
 def _create_engine_for(host: str):
     return create_engine(
@@ -79,7 +76,6 @@ def get_engine():
         pick_engine_with_retry()
     return _engine
 
-# sessionmaker sem bind fixo; ligamos no engine a cada request
 SessionLocal = sessionmaker(autoflush=False, autocommit=False, future=True)
 
 def db_session() -> Session:
@@ -97,12 +93,10 @@ def db_session() -> Session:
         _dispose_engine()
         raise HTTPException(status_code=503, detail="database unavailable")
 
-# ---------------- JWT ----------------
 JWT_SECRET = os.getenv("JWT_SECRET", "change-me")
 JWT_ALG = "HS256"
 JWT_EXPIRES_MIN = int(os.getenv("JWT_EXPIRES_MIN", "120"))
 
-# ---------------- Models ----------------
 Base = declarative_base()
 
 class User(Base):
@@ -128,7 +122,6 @@ class Task(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     owner = relationship("User", back_populates="tasks")
 
-# ---------------- Schemas ----------------
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 class RegisterIn(BaseModel):
@@ -173,9 +166,8 @@ class TaskOut(BaseModel):
     status: str
     priority: str
     class Config:
-        from_attributes = True  # Pydantic v2
+        from_attributes = True 
 
-# ---------------- Helpers ----------------
 def hash_pw(p: str) -> str:
     return PWD_CTX.hash(p)
 
@@ -220,12 +212,10 @@ def ensure_schema(db: Session) -> None:
     if need:
         Base.metadata.create_all(bind=bind)
 
-# ---------------- App & startup ----------------
 app = FastAPI(title="Tuesday API")
 
 @app.on_event("startup")
 def _startup_migrate():
-    # escolhe host OK e cria tabelas com retry curto
     pick_engine_with_retry()
     for _ in range(60):
         try:
@@ -236,7 +226,6 @@ def _startup_migrate():
         except OperationalError:
             time.sleep(1)
 
-# ---------------- Endpoints ----------------
 @app.get("/health")
 def health():
     try:
@@ -246,7 +235,7 @@ def health():
     except Exception:
         return {"status": "degraded", "service": "api", "db_host": _engine_host}
 
-# ---- Auth ----
+
 @app.post("/auth/register")
 def register(payload: RegisterIn, db: Session = Depends(db_session)):
     try:
@@ -284,7 +273,6 @@ def login(payload: LoginIn, db: Session = Depends(db_session)):
         raise HTTPException(status_code=401, detail="invalid credentials")
     return {"accessToken": mk_token(u)}
 
-# ---- Tasks ----
 @app.get("/api/tasks", response_model=List[TaskOut])
 def list_tasks(current: User = Depends(get_current_user), db: Session = Depends(db_session)):
     try:
