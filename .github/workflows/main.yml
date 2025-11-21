@@ -33,13 +33,20 @@ jobs:
         run: |
           sudo apt-get update
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server
+
           sudo systemctl start mysql
 
+          # Cria banco e usuário
           sudo mysql -e "CREATE DATABASE IF NOT EXISTS app_db;"
-          sudo mysql -e "CREATE USER IF NOT EXISTS 'app_user'@'127.0.0.1' IDENTIFIED BY 'app_pass';"
-          sudo mysql -e "GRANT ALL PRIVILEGES ON app_db.* TO 'app_user'@'127.0.0.1'; FLUSH PRIVILEGES;"
+          sudo mysql -e "CREATE USER IF NOT EXISTS 'app_user'@'%' IDENTIFIED BY 'app_pass';"
+          sudo mysql -e "GRANT ALL PRIVILEGES ON app_db.* TO 'app_user'@'%' ; FLUSH PRIVILEGES;"
 
-          sudo mysql app_db < database/init.sql || true
+          # Testa conexão com o usuário da aplicação
+          mysql -h 127.0.0.1 -uapp_user -papp_pass -e "SELECT 1" app_db
+
+          # Opcional: aplica o init.sql usando app_user (não precisa do root)
+          mysql -h 127.0.0.1 -uapp_user -papp_pass app_db < database/init.sql || true
+
 
       - name: Instalar dependências Python
         run: |
