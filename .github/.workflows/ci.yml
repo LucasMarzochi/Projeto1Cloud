@@ -1,0 +1,63 @@
+name: CI - Tuesday API & Frontend
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    env:
+      # Config do app apontando para o MySQL local do runner
+      DB_USER: app_user
+      DB_PASS: app_pass
+      DB_NAME: app_db
+      DB_PORT: 3306
+      DB_HOSTS: 127.0.0.1
+      JWT_SECRET: test-secret
+      JWT_EXPIRES_MIN: 60
+      PYTHONUNBUFFERED: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar MySQL no runner
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server
+
+          sudo systemctl start mysql
+
+          # Cria banco e usuário compatíveis com seu Vagrant
+          sudo mysql -e "CREATE DATABASE IF NOT EXISTS app_db;"
+          sudo mysql -e "CREATE USER IF NOT EXISTS 'app_user'@'127.0.0.1' IDENTIFIED BY 'app_pass';"
+          sudo mysql -e "GRANT ALL PRIVILEGES ON app_db.* TO 'app_user'@'127.0.0.1'; FLUSH PRIVILEGES;"
+
+          # (Opcional) aplica o init.sql do projeto
+          sudo mysql app_db < database/init.sql || true
+
+      - name: Instalar dependências Python
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r app/requirements.txt
+          pip install -r frontend/requirements.txt
+          pip install pytest pytest-cov httpx
+
+      - name: Rodar unit tests
+        run: |
+          pytest -m "unit" --maxfail=1 --disable-warnings
+
+      - name: Rodar integration tests
+        run: |
+          pytest -m "integration" --maxfail=1 --disable-warnings
+
+      # Deployment é opcional, então não coloquei etapa de deploy aqui.
