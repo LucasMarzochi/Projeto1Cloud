@@ -1,10 +1,17 @@
 import os
+import sys
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 
-# Mesma config usada no workflow (MySQL local do runner)
+# Garante que a raiz do projeto esteja no PYTHONPATH
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+# Config do banco, compatível com o workflow
 DB_USER = os.getenv("DB_USER", "app_user")
 DB_PASS = os.getenv("DB_PASS", "app_pass")
 DB_NAME = os.getenv("DB_NAME", "app_db")

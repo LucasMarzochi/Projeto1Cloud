@@ -1,14 +1,22 @@
 import os
+import sys
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
 from jose import jwt
 
-# Garante segredo fixo para testes ANTES de importar o módulo
+# Garante que a raiz do projeto esteja no PYTHONPATH
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+# Define o segredo ANTES de importar o módulo principal
 os.environ.setdefault("JWT_SECRET", "test-secret")
 
 from app import main as app  # noqa: E402
+
 
 
 @pytest.mark.unit
