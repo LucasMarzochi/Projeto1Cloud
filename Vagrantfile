@@ -170,6 +170,8 @@ EOF
       ufw deny  from 172.16.21.0/24 to any port 8001 proto tcp || true
       ufw --force enable
     SH
+    # liga o provision_app.sh a VM app, para que seja possivel fazer os testes dentro dela também (além de no github)
+    app.vm.provision "shell", path: "provision_app.sh"
   end
 
   # ---------------- DATABASE (MySQL) ----------------

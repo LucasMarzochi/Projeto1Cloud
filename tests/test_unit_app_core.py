@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from jose import jwt
 # os unit tests testam algumas lógicas da api de maneira isolada sem depender da infraestrutura
 
-# Garante que a raiz do projeto esteja no PYTHONPATH
+# garante que a raiz do projeto esta no PYTHONPATH
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
