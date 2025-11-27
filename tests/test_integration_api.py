@@ -6,12 +6,11 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 
-# Garante que a raiz do projeto esteja no PYTHONPATH
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-# Config do banco, compatível com o workflow
+# configura o banco para que seja compatível com o workflow
 DB_USER = os.getenv("DB_USER", "app_user")
 DB_PASS = os.getenv("DB_PASS", "app_pass")
 DB_NAME = os.getenv("DB_NAME", "app_db")
@@ -23,7 +22,7 @@ DB_URL = (
     "?charset=utf8mb4"
 )
 
-from app import main as app  # noqa: E402
+from app import main as app 
 
 
 @pytest.fixture(scope="session")
@@ -41,18 +40,18 @@ def client(db_engine):
         conn.execute(text("DELETE FROM users"))
     return TestClient(app.app)
 
-
+# faz o teste da health garantindo que consegue se comunicar com o banco
 @pytest.mark.integration
-def test_health_retorna_ok_ou_degraded(client):
+def test_health(client):
     resp = client.get("/health")
     assert resp.status_code == 200
     data = resp.json()
     assert data["service"] == "api"
     assert data["status"] in {"ok", "degraded"}
 
-
+# testa se o registro realmente adiciona um novo usuário no BD e se o login consegue buscar o usuário no banco e validar senha
 @pytest.mark.integration
-def test_fluxo_register_e_login_funciona(client):
+def test_fluxo_register_e_login(client):
     email = "integ_user@example.com"
     senha = "senha123"
 
@@ -72,53 +71,49 @@ def test_fluxo_register_e_login_funciona(client):
     assert token2
     assert token1 != "" and token2 != ""
 
-
+# faz um teste "completo" da aplicacao
+# cria um novo usuario ele entao cria uma tarefa e verifica se a tarefa esta na lista de tarefas
+# depois atuliza a tarefa, deleta a tarefa e confere que a tarefa realmente sumiu
 @pytest.mark.integration
-def test_crud_de_tasks(client):
+def test_funcionalidades_app(client):
     email = "tasks_user@example.com"
     senha = "senha123"
 
-    # Cria usuário
-    r = client.post(
+    cria_user = client.post(
         "/auth/register",
         json={"name": "User Tasks", "email": email, "password": senha},
     )
-    assert r.status_code == 200
-    token = r.json()["accessToken"]
+    assert cria_user.status_code == 200
+    token = cria_user.json()["accessToken"]
     headers = {"Authorization": f"Bearer {token}"}
 
-    # Cria tarefa
     payload = {
-        "title": "Tarefa integ",
+        "title": "Tarefa teste de integracao",
         "description": "Teste integração",
         "start_at": "2025-01-01T10:00:00",
         "end_at": "2025-01-01T11:00:00",
         "status": "todo",
         "priority": "medium",
     }
-    r_create = client.post("/api/tasks", json=payload, headers=headers)
-    assert r_create.status_code in (200, 201)
-    task_id = r_create.json()["id"]
+    cria_tarefa_teste = client.post("/api/tasks", json=payload, headers=headers)
+    assert cria_tarefa_teste.status_code in (200, 201)
+    task_id = cria_tarefa_teste.json()["id"]
 
-    # Lista tarefas
-    r_list = client.get("/api/tasks", headers=headers)
-    assert r_list.status_code == 200
-    tasks = r_list.json()
+    verifica_lista_tarefas = client.get("/api/tasks", headers=headers)
+    assert verifica_lista_tarefas.status_code == 200
+    tasks = verifica_lista_tarefas.json()
     assert any(t["id"] == task_id for t in tasks)
 
-    # Atualiza tarefa
     payload_update = dict(payload)
-    payload_update["title"] = "Tarefa integ atualizada"
+    payload_update["title"] = "Tarefa teste de integracao atualizada"
     r_upd = client.put(f"/api/tasks/{task_id}", json=payload_update, headers=headers)
     assert r_upd.status_code == 200
     assert r_upd.json()["id"] == task_id
 
-    # Deleta tarefa
-    r_del = client.delete(f"/api/tasks/{task_id}", headers=headers)
-    assert r_del.status_code == 204
+    deleta_tarefa = client.delete(f"/api/tasks/{task_id}", headers=headers)
+    assert deleta_tarefa.status_code == 204
 
-    # Confere que sumiu
-    r_list2 = client.get("/api/tasks", headers=headers)
-    assert r_list2.status_code == 200
-    tasks2 = r_list2.json()
+    confere_tarefa_deletada = client.get("/api/tasks", headers=headers)
+    assert confere_tarefa_deletada.status_code == 200
+    tasks2 = confere_tarefa_deletada.json()
     assert all(t["id"] != task_id for t in tasks2)
